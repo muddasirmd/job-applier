@@ -1,0 +1,43 @@
+Project Setup Guide:
+
+⚙️ Project Structure:
+
+    ai-email-writer/
+    ├── backend/
+    │   ├── Dockerfile
+    │   ├── requirements.txt
+    │   └── job_applier/          # Django project
+    ├── frontend/
+    │   ├── Dockerfile
+    │   └── vue-app/             # Vue project
+    └── docker-compose.yml
+
+🐍 Backend Setup:
+
+a. Create Django project
+    mkdir backend && cd backend
+    python -m venv venv
+    source venv/bin/activate
+    pip install django djangorestframework openai (pip install django djangorestframework google-generativeai)
+    django-admin startproject job_applier .
+
+💚 Frontend Setup:
+
+b. Create Vue project
+    cd ../frontend
+    npm create vue@latest vue-app
+    cd vue-app
+    npm install tailwindcss @tailwindcss/vite
+    # npm install -D tailwindcss postcss autoprefixer
+
+
+c. Set environment variables
+
+    Create a .env file in the root directory with the following content:
+
+   export OPENAI_API_KEY=your_openai_api_key
+   export GEMINI_API_KEY=your_gemini_api_key
+
+🚀 Run the app
+
+    docker compose up --build

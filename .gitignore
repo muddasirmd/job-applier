@@ -1,0 +1,62 @@
+# === General ===
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+.env
+.env.*
+*.local
+
+# === Python / Backend ===
+# Byte-compiled / cache
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/**/*.pyo
+backend/**/*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Build / packaging
+build/
+dist/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+
+# === Node / Frontend ===
+frontend/vue-app/node_modules/
+frontend/vue-app/dist/
+frontend/vue-app/.env
+frontend/vue-app/.DS_Store
+frontend/vue-app/npm-debug.log*
+frontend/vue-app/yarn-debug.log*
+frontend/vue-app/yarn-error.log*
+
+# === Docker ===
+# Ignore temporary Docker build files
+**/Dockerfile.*
+**/.dockerignore
+
+# Docker volumes / artifacts
+*.pid
+*.sock
+*.log
+tmp/
+docker-compose.override.yml
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.iml
+
+# === OS Files ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
