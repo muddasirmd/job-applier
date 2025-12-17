@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  backend:
+    build: ./backend
+    container_name: job-applier-backend
+    env_file: .env
+    environment:
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - GOOGLE_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+    ports:
+      - "8000:8000"
+    networks:
+      - ai-net
+    volumes:
+    - ./backend:/app  # Mount local code directly
+
+  frontend:
+    build: ./frontend
+    container_name: job-applier-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000
+    networks:
+      - ai-net
+    volumes:
+    - ./frontend/job-applier-app:/app
+    - /app/node_modules
+
+networks:
+  ai-net:
+    driver: bridge
