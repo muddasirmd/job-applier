@@ -1,7 +1,12 @@
 import os
+import smtplib
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.core.mail import send_mail
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 # Gemini SDK
 from google import genai
@@ -53,5 +58,32 @@ def generate_email(request):
         )
         return Response({"email": response.text})
 
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['POST'])
+def send_email(request):
+
+    data = request.data
+    recipient = data.get("recipient_name", "")
+    subject = data.get("subject", "")
+    email = data.get("email", "")
+
+    if not recipient or not subject or not email:
+        return Response({"error": "Provide recipient, subject, and email"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        
+        send_mail(
+            subject=subject,
+            message=email,
+            from_email="muddasirmd2@gmail.com",
+            recipient_list=[recipient],
+            fail_silently=False,
+        )
+        return Response({"message": "Email sent successfully."})
+    
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

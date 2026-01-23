@@ -28,6 +28,13 @@
       </button>
 
       <button @click="clear" :disabled="loading" :class="[ loading ? 'cursor-not-allowed' : 'cursor-pointer', 'px-3 py-2 border rounded']">Clear</button>
+
+      <button
+        @click="sendEmail"
+        :disabled="loading || !email"
+        :class="[ loading || !email ? 'cursor-not-allowed' : 'cursor-pointer', 'px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400']">
+        {{ loading ? 'Sending...' : 'Send Email' }}
+      </button>
     </div>
 
     <div v-if="error" class="text-red-600">{{ error }}</div>
@@ -60,11 +67,11 @@
 <script setup>
 import { ref } from 'vue'
 
-const recipient_name = ref('')
-const purpose = ref('')
-const details = ref('')
-const tone = ref('')
-const email = ref("")
+const recipient_name = ref('mnisar@teresol.com')
+const purpose = ref('Leave Application')
+const details = ref('Applying for leave from July 10 to July 15 due to personal reasons.')
+const tone = ref('professional')
+const email = ref("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
 const loading = ref(false)
 const error = ref('')
 
@@ -92,6 +99,26 @@ async function onSubmit() {
     error.value = err.message
   } finally {
     loading.value = false
+  }
+}
+
+async function sendEmail(){
+
+  try{
+    const res = await fetch('http://localhost:8000/api/email/send/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient_name: recipient_name.value,
+        subject: purpose.value,
+        email: email.value
+      })
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Server error')
+    pushToast('Email sent successfully ✓')
+  } catch (err) {
+    error.value = err.message
   }
 }
 
