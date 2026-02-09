@@ -2,50 +2,54 @@
   <div class="space-y-4">
     <div class="flex flex-col gap-2">
       
-      <input v-model="recipient_name" placeholder="Recipient name" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
+      <input v-model="recipient_email" placeholder="Recipient Email" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
+      <p v-if="errorObj.email" class="text-red-500">
+        {{ errorObj.email }}
+      </p>
 
-      <select v-model="tone" class="px-2 py-3 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400">
-        <option value="">Select tone...</option>
-        <option value="professional">Professional</option>
-        <option value="friendly">Friendly</option>
-        <option value="formal">Formal</option>
-        <option value="casual">Casual</option>
-        <option value="persuasive">Persuasive</option>
-      </select>
-    
+      <input v-model="subject" placeholder="Subject" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
+      <p v-if="errorObj.subject" class="text-red-500">
+        {{ errorObj.subject }}
+      </p>
 
-      <input v-model="purpose" placeholder="Purpose (subject / short)" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
+      <input v-model="company" placeholder="Company" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
       
-      <textarea v-model="details" placeholder="Details / context" rows="4" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400"></textarea>
+      <input v-model="heard_from" placeholder="Heard From" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400" />
+      
+      <textarea v-model="details" placeholder="Details / Context" rows="4" class="p-2 rounded border-2 border-gray-300 focus:outline-none focus:border-blue-400"></textarea>
+      <p v-if="errorObj.details" class="text-red-500">
+        {{ errorObj.details }}
+      </p>  
     </div>
 
     <div class="flex items-center gap-3">
       <button
         @click="onSubmit"
-        :disabled="loading"
-        :class="[ loading ? 'cursor-not-allowed' : 'cursor-pointer', 'px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400']">
+        :disabled="loading || sending"
+        :class="[ loading || sending ? 'cursor-not-allowed' : 'cursor-pointer', 'px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400']">
         {{ loading ? 'Generating…' : 'Generate Email' }}
       </button>
 
-      <button @click="clear" :disabled="loading" :class="[ loading ? 'cursor-not-allowed' : 'cursor-pointer', 'px-3 py-2 border rounded']">Clear</button>
+      <button @click="clear" :disabled="loading || sending" :class="[ loading || sending ? 'cursor-not-allowed' : 'cursor-pointer', 'px-3 py-2 border rounded']">Clear</button>
 
-      <button
-        @click="sendEmail"
-        :disabled="loading || !email"
-        :class="[ loading || !email ? 'cursor-not-allowed' : 'cursor-pointer', 'px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400']">
-        {{ loading ? 'Sending...' : 'Send Email' }}
-      </button>
     </div>
 
-    <div v-if="error" class="text-red-600">{{ error }}</div>
+    <div v-if="errorObj.generic" class="text-red-600">{{ errorObj.generic }}</div>
 
-    <div v-if="email" class="flex flex-col relative gap-3 p-4 rounded-lg border border-gray-300 bg-gray-200">
+    <div v-if="generatedEmail" class="flex flex-col relative gap-3 p-4 rounded-lg border border-gray-300 bg-gray-200">
       <h2 class="text-xl font-semibold mb-2">Generated Email</h2>
-      <pre class="whitespace-pre-wrap font-sans tracking-wide">{{ email }}</pre>
+      <pre class="whitespace-pre-wrap font-sans tracking-wide">{{ generatedEmail }}</pre>
       <div class="mt-3 flex gap-2">
         <button @click="copy" class="px-3 py-1 border rounded cursor-pointer bg-blue-600 text-white">Copy</button>
         <button @click="download" class="px-3 py-1 border rounded cursor-pointer bg-blue-600 text-white">Download .txt</button>
-        
+              
+        <button
+          @click="sendEmail"
+          :disabled="sending"
+          :class="[sending ? 'cursor-not-allowed' : 'cursor-pointer', 'px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400']">
+          {{ sending ? 'Sending...' : 'Send Email' }}
+        </button>
+      
         <!-- Toasts container -->
         <div class="absolute bottom-14 z-50">
           <div
@@ -65,38 +69,77 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 
-const recipient_name = ref('mnisar@teresol.com')
-const purpose = ref('Leave Application')
-const details = ref('Applying for leave from July 10 to July 15 due to personal reasons.')
-const tone = ref('professional')
-const email = ref("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+const recipient_email = ref('')
+const subject = ref('')
+const details = ref('Fullstack developer with more than 5 years of experience in building web applications. Skilled in JavaScript, Vue.js, Nuxt.js, Laravel, and Python. Looking for a challenging role to contribute my expertise and grow professionally.')
+const generatedEmail = ref('')
+const company = ref('')
+const heard_from = ref('')
 const loading = ref(false)
-const error = ref('')
+const sending = ref(false)
+
+
+const errorObj = reactive({
+  'email': '',
+  'subject': '',
+  'details': '',
+  'generic': ''
+})
+
+let isValid = true
+
+// const isEmailValid = computed(() => {
+//   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//   return re.test(recipient_email.value)
+// })
 
 async function onSubmit() {
-  if (loading.value) return
+  if (loading.value || sending.value) return
+
+  // Reset errors
+  Object.keys(errorObj).forEach(key => errorObj[key] = '')
+
+  isValid = true
+  
+
+  // Validation
+  if(!(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).test(recipient_email.value)){
+    errorObj.email = 'Invalid email address'
+    isValid = false
+  }
+  if(subject.value.trim() === ''){
+    errorObj.subject = 'Subject is required'
+    isValid = false
+  }
+  if(details.value.trim() === ''){
+    errorObj.details = 'Details are required'
+    isValid = false
+  }
+
+  if(!isValid) return;
+
   loading.value = true
-  error.value = ''
-  email.value = ''
+  generatedEmail.value = ''
 
   try {
     const res = await fetch('http://localhost:8000/api/email/generate/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        recipient_name: recipient_name.value,
-        purpose: purpose.value,
+        recipient_email: recipient_email.value,
+        subject: subject.value,
         details: details.value,
-        tone: tone.value
+        company: company.value,
+        heard_from: heard_from.value,
       })
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Server error')
-    email.value = data.email
+    generatedEmail.value = data.email
   } catch (err) {
-    error.value = err.message
+    errorObj.generic = err.message
   } finally {
     loading.value = false
   }
@@ -104,33 +147,41 @@ async function onSubmit() {
 
 async function sendEmail(){
 
+  if (loading.value || sending.value) return
+  sending.value = true
+  
   try{
     const res = await fetch('http://localhost:8000/api/email/send/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        recipient_name: recipient_name.value,
-        subject: purpose.value,
-        email: email.value
+        recipient_email: recipient_email.value,
+        subject: subject.value,
+        email: generatedEmail.value
       })
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Server error')
     pushToast('Email sent successfully ✓')
   } catch (err) {
-    error.value = err.message
+    errorObj.generic = err.message
+  }
+  finally {
+    sending.value = false
   }
 }
 
 function clear() {
-  recipient_name.value = ''
-  purpose.value = ''
+  recipient_email.value = ''
+  subject.value = ''
   details.value = ''
-  email.value = ''
+  generatedEmail.value = ''
+  company.value = ''
+  heard_from.value = ''
 }
 
 function copy() {
-  navigator.clipboard.writeText(email.value)
+  navigator.clipboard.writeText(generatedEmail.value)
   pushToast('Copied to clipboard ✓')
 }
 
@@ -145,7 +196,7 @@ function pushToast(message, ms = 2200) {
 }
 
 function download() {
-  const blob = new Blob([email.value], { type: 'text/plain' })
+  const blob = new Blob([generatedEmail.value], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
