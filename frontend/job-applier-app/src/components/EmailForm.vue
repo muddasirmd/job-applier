@@ -123,6 +123,7 @@ async function onSubmit() {
   loading.value = true
   generatedEmail.value = ''
 
+  
   try {
     const res = await fetch('http://localhost:8000/api/email/generate/', {
       method: 'POST',
